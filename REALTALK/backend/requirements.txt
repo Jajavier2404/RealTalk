@@ -1,0 +1,18 @@
+flask
+flask-cors
+flask-socketio
+
+// comandos para instalar dependencias
+python -m venv venv
+source venv/bin/activate    # En Windows: venv\Scripts\activate
+pip install flask flask-cors flask-socketio
+
+//Descargar php 
+1. https://windows.php.net/download
+2. descomprimir en disco duro c:/
+3 bucar en windows variables de entorno
+4. en variables de entorno del sistema, buscar la variable PATH y editarla
+5. en editar luego le da a nuevo y coloca la ruta donde descomprimio el php, por ejemplo: C:\php
+6. aceptar y cerrar y luegp enm cmd php -v
+7. php -S localhost:8000
+8. abrir http://localhost:8000/templates/login.php
