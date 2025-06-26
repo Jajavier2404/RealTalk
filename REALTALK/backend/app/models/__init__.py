@@ -1,3 +1,3 @@
-from .user import Usuario
-from .message import Mensaje
-from .session import SesionActiva
+from .user import User
+from .message import Message
+from .session import Session

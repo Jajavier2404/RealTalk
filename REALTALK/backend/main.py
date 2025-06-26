@@ -1,8 +1,6 @@
-# backend/main.py
-
-from app import create_app, socketio  # 👈 importante: importar desde app/__init__.py
+from app import create_app
 
 app = create_app()
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000)
+    app.run(debug=True)

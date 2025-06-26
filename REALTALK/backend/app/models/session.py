@@ -1,13 +1,22 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from app import db
 from datetime import datetime
-from db.database import Base
 
-class SesionActiva(Base):
-    __tablename__ = "sesiones_activas"
+class Session(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    token = db.Column(db.String(500), nullable=False)
+    ip_address = db.Column(db.String(100))
+    device_info = db.Column(db.String(200))
+    login_time = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
 
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), primary_key=True)
-    socket_id = Column(String(500), nullable=False)
-    conectado_en = Column(DateTime, default=datetime.utcnow)
-
-    usuario = relationship("Usuario", backref="sesion_activa", uselist=False)
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "token": self.token,
+            "ip_address": self.ip_address,
+            "device_info": self.device_info,
+            "login_time": self.login_time.isoformat(),
+            "is_active": self.is_active
+        }
