@@ -1,32 +1,76 @@
-# app/chat/routes.py
 from flask import Blueprint, request, jsonify
-# Suponiendo que necesitas 'db' para operaciones de base de datos y 'socketio' para tiempo real
-from app import db, socketio # <--- CAMBIA ESTA LÍNEA
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from .chat_service import ChatService
 
 chat_bp = Blueprint('chat', __name__)
 
-# Ejemplo de ruta que podría usar db o socketio
-@chat_bp.route('/send_message', methods=['POST'])
+@chat_bp.route('/send', methods=['POST'])
+@jwt_required()
 def send_message():
-    data = request.json
-    sender_id = data.get('sender_id')
-    content = data.get('content')
+    """Endpoint para enviar un mensaje"""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data or 'receiver_id' not in data or 'content' not in data:
+        return jsonify({'error': 'Datos incompletos'}), 400
+    
+    if not data['content'].strip():
+        return jsonify({'error': 'El mensaje no puede estar vacío'}), 400
+    
+    result, status_code = ChatService.send_message(
+        sender_id=current_user_id,
+        receiver_id=data['receiver_id'],
+        content=data['content']
+    )
+    
+    return jsonify(result), status_code
 
-    if not sender_id or not content:
-        return jsonify({"error": "Sender ID and content are required"}), 400
+@chat_bp.route('/conversation/<int:user_id>', methods=['GET'])
+@jwt_required()
+def get_conversation(user_id):
+    """Endpoint para obtener conversación con un usuario específico"""
+    current_user_id = get_jwt_identity()
+    
+    limit = request.args.get('limit', 50, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    result, status_code = ChatService.get_conversation(
+        user1_id=current_user_id,
+        user2_id=user_id,
+        limit=limit,
+        offset=offset
+    )
+    
+    return jsonify(result), status_code
 
-    try:
-        new_message = Message(sender_id=sender_id, content=content)
-        db.session.add(new_message)
-        db.session.commit()
+@chat_bp.route('/conversations', methods=['GET'])
+@jwt_required()
+def get_conversations():
+    """Endpoint para obtener todas las conversaciones del usuario"""
+    current_user_id = get_jwt_identity()
+    
+    result, status_code = ChatService.get_user_conversations(current_user_id)
+    return jsonify(result), status_code
 
-        # Emitir el mensaje a todos los clientes conectados
-        socketio.emit('new_message', new_message.to_dict())
+@chat_bp.route('/mark-read/<int:sender_id>', methods=['PUT'])
+@jwt_required()
+def mark_as_read(sender_id):
+    """Endpoint para marcar mensajes como leídos"""
+    current_user_id = get_jwt_identity()
+    
+    result, status_code = ChatService.mark_messages_as_read(
+        user_id=current_user_id,
+        sender_id=sender_id
+    )
+    
+    return jsonify(result), status_code
 
-        return jsonify({"message": "Message sent successfully!"}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-# Recuerda importar tu modelo Message si lo estás usando aquí
-from app.models.message import Message # Asumiendo que Message está en app/models/message.py o similar
+@chat_bp.route('/unread-count', methods=['GET'])
+@jwt_required()
+def get_unread_count():
+    """Endpoint para obtener el conteo de mensajes no leídos"""
+    current_user_id = get_jwt_identity()
+    sender_id = request.args.get('sender_id', type=int)
+    
+    count = ChatService.get_unread_count(current_user_id, sender_id)
+    return jsonify({'unread_count': count}), 200
